@@ -1,3 +1,19 @@
+<script setup lang="ts">
+import { useUser } from '@/composable/user';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
+import { onMounted } from 'vue';
+import router from '@/router';
+
+const { getUserInfo } = useUser();
+
+onMounted(async () => {
+  const userInfo = await getUserInfo();
+  console.log('User Info:', userInfo);
+  if (!userInfo) router.push({ name: "Login" });
+})
+
+</script>
+
 <template>
   <ion-page>
     <ion-header :translucent="true">
@@ -21,10 +37,6 @@
     </ion-content>
   </ion-page>
 </template>
-
-<script setup lang="ts">
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
-</script>
 
 <style scoped>
 #container {
