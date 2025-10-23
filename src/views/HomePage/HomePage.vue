@@ -3,6 +3,7 @@ import { useUser } from '@/composable/user';
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
 import { onMounted } from 'vue';
 import router from '@/router';
+import { MainToolbar } from '@/components/MainToolbar';
 
 const { getUserInfo } = useUser();
 
@@ -18,7 +19,7 @@ onMounted(async () => {
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>Blank</ion-title>
+        <MainToolbar />
       </ion-toolbar>
     </ion-header>
 

@@ -24,7 +24,7 @@ const { username, password, verifyPassword, handleSubmit } = useLogin();
         <ion-content :fullscreen="true">
             <div id="login-card-container">
                 <ion-card id="login-card">
-                    <img alt="Silhouette of mountains" src="/noodles_banner.png" />
+                    <img alt="Noodles" src="/noodles_banner.png" />
 
                     <ion-card-header>
                         <ion-card-subtitle>{{ isRegistering ? 'Register' : 'Login' }} to access
@@ -57,7 +57,7 @@ const { username, password, verifyPassword, handleSubmit } = useLogin();
 
                             <ion-button @click="handleSubmit({ isRegistering })" expand="block">{{ isRegistering ?
                                 'Register' : 'Login'
-                            }}</ion-button>
+                                }}</ion-button>
 
                             <p v-if="isRegistering">Already have an account? <a @click="isRegistering = false">Login</a>
                             </p>
