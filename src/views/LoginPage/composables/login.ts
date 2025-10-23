@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { useCommsSingleton } from "./comms";
+import { useUser } from "@/composable/user";
 
 type ValidationResult = { success: true } | { success: false; message: string };
 
@@ -20,6 +21,7 @@ export function useLogin() {
     const verifyPassword = ref('');
 
     const { sendToast, sendError } = useCommsSingleton();
+    const { login, register } = useUser();
 
     function validateUsername(): ValidationResult {
         if (username.value.length < CONFIG.username.min) {
@@ -45,7 +47,7 @@ export function useLogin() {
         return { success: true };
     }
 
-    function handleSubmit({ isRegistering }: { isRegistering: boolean }) {
+    async function handleSubmit({ isRegistering }: { isRegistering: boolean }) {
         const usernameValidation = validateUsername();
         if (!usernameValidation.success) sendError("username", usernameValidation.message);
 
@@ -59,7 +61,24 @@ export function useLogin() {
         }
 
         // Submit
-        sendToast(isRegistering ? "Registered successfully!" : "Logged in successfully!");
+        const action = isRegistering ? register : login;
+        const result = await action(username.value, password.value);
+        if (result) {
+            console.log(result);
+            if (result.success) {
+                sendToast(isRegistering ? "Registration successful!" : "Login successful!");
+            } else {
+                sendToast(result.message);
+                if (result.validationErrors) {
+                    result.validationErrors.forEach(err => {
+                        const [field, message] = err.split(": ");
+                        sendError(field as any, message);
+                    });
+                }
+            }
+        } else {
+            sendToast(isRegistering ? "Registration failed. Please try again." : "Login failed. Please check your credentials and try again.");
+        }
     }
 
     return {
