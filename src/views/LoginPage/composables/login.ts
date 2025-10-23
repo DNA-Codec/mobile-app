@@ -11,7 +11,7 @@ const CONFIG = {
     },
     password: {
         max: 50,
-        min: 3,
+        min: 6,
     },
 }
 
