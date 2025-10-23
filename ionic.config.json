@@ -1,0 +1,7 @@
+{
+  "name": "Noodles",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
