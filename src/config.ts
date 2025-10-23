@@ -1,3 +1,3 @@
 export const CONFIG = {
-    API_URL: "http://localhost:3000" //'https://noodlesapi.isdev.co',
+    API_URL: import.meta.env.VITE_API_URL || "https://noodlesapi.isdev.co",
 }
