@@ -219,11 +219,31 @@ export function useFiles() {
         return data;
     }
 
+    async function downloadFile(fileId: string) {
+        const result = await axios.get(`${CONFIG.API_URL}/codec/api/v1/download/${fileId}`, {
+            withCredentials: true,
+            responseType: 'blob'
+        });
+
+        const blob = new Blob([result.data], { type: 'application/octet-stream' });
+        return blob;
+    }
+
+    async function deleteFile(fileId: string) {
+        const result = await axios.delete(`${CONFIG.API_URL}/codec/api/v1/file/${fileId}`, {
+            withCredentials: true
+        });
+
+        return result.data;
+    }
+
     return {
         uploadFile,
         getFiles,
         getStats,
         getFile,
+        downloadFile,
+        deleteFile,
         isRetrievingFiles
     };
 }

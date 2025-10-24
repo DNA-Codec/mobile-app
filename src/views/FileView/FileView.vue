@@ -4,16 +4,30 @@ import { FileInfo, useFiles } from '@/composable/files';
 import { useUser } from '@/composable/user';
 import router from '@/router';
 import {
-    IonBreadcrumb,
-    IonBreadcrumbs,
+    IonBreadcrumb, IonFooter, IonAlert,
+    IonBreadcrumbs, IonButton, IonIcon,
     IonContent, IonHeader, IonPage, IonTitle,
     IonToolbar, IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent
 } from '@ionic/vue';
+import { downloadOutline, trashBinOutline } from 'ionicons/icons';
 import { computed, onMounted, ref } from 'vue';
 
 const { getUserInfo } = useUser();
-const { getFile } = useFiles();
+const { getFile, downloadFile, deleteFile } = useFiles();
 const file = ref<FileInfo | null>(null);
+
+const alertButtons = [
+    {
+        text: 'Cancel',
+        role: 'cancel',
+        handler: () => { },
+    },
+    {
+        text: 'OK',
+        role: 'confirm',
+        handler: handleDelete,
+    },
+];
 
 const numberFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 
@@ -47,6 +61,30 @@ onMounted(async () => {
     if (fileData.success) file.value = fileData.file;
     else console.error('Failed to load file data');
 })
+
+async function handleDownload() {
+    if (!file.value) return;
+    const blob = await downloadFile(file.value.metadata.id);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.value?.metadata.originalFileName || 'downloaded_file';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+
+async function handleDelete() {
+    if (!file.value) return;
+    const response = await deleteFile(file.value.metadata.id);
+    if (response.success) {
+        console.log('File deleted successfully');
+        router.push({ name: 'Home' });
+    } else {
+        console.error('Failed to delete file');
+    }
+}
 
 </script>
 
@@ -176,8 +214,23 @@ onMounted(async () => {
                     </div>
                 </ion-card-content>
             </ion-card>
-
         </ion-content>
+
+        <ion-footer>
+            <ion-toolbar collapse="condense">
+                <div style="display: flex; justify-content: space-between; padding: 10px;">
+                    <ion-button fill="solid" color="success" @click="handleDownload">
+                        <ion-icon slot="start" :icon="downloadOutline"></ion-icon>
+                        Decode & Download
+                    </ion-button>
+                    <ion-button id="delete-file" fill="outline" color="danger">
+                        <ion-icon :icon="trashBinOutline" slot="icon-only"></ion-icon>
+                    </ion-button>
+                    <ion-alert trigger="delete-file" header="Do you want to delete this file?"
+                        :buttons="alertButtons"></ion-alert>
+                </div>
+            </ion-toolbar>
+        </ion-footer>
     </ion-page>
 </template>
 
