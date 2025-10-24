@@ -1,0 +1,204 @@
+<script setup lang="ts">
+import { FileEntry, FileQuery, FileStats, useFiles } from '@/composable/files';
+import router from '@/router';
+import {
+    IonButton,
+    IonCard, IonCardContent, IonCardHeader, IonCardSubtitle,
+    IonIcon,
+    IonInput,
+    IonText
+} from '@ionic/vue';
+import { searchOutline } from 'ionicons/icons';
+import { computed, onMounted, ref } from 'vue';
+
+const props = withDefaults(defineProps<{
+    previewSize?: "small" | "normal" | "large";
+    maxAmount?: number;
+}>(), {
+    previewSize: "normal"
+});
+
+const dynamicGridStyle = computed(() => {
+    const gridTemplate = {
+        small: "repeat(auto-fill, minmax(100px, 1fr))",
+        large: "repeat(auto-fill, minmax(250px, 1fr))",
+        normal: "repeat(auto-fill, minmax(150px, 1fr))"
+    };
+    return { gridTemplateColumns: gridTemplate[props.previewSize] };
+});
+
+const dynamicGridHeaderStyle = computed(() => {
+    const padding = {
+        small: "6px",
+        normal: "12px",
+        large: "22px"
+    };
+    return { padding: padding[props.previewSize] };
+});
+
+const dynamicGridSubtitleStyle = computed(() => {
+    const fontSize = {
+        small: "10px",
+        normal: "12px",
+        large: "16px"
+    };
+    return { fontSize: fontSize[props.previewSize] };
+});
+
+const { getFiles, uploadFile, getStats, isRetrievingFiles } = useFiles();
+
+const stats = ref<FileStats | null>(null);
+const files = ref<Array<FileEntry>>([]);
+const searchQuery = ref<string>("");
+
+async function updateStats() {
+    const statsResult = await getStats();
+    if (statsResult.success) stats.value = statsResult.stats;
+}
+
+async function fileSearch(query?: FileQuery) {
+    const baseQuery: FileQuery = { limit: props.maxAmount };
+    files.value = [];
+    const filesResult = await getFiles({ ...baseQuery, ...query });
+    if (filesResult.success) files.value = filesResult.files;
+}
+
+onMounted(async () => {
+    fileSearch();
+    updateStats();
+})
+
+
+function handleUpload() {
+    // prompt for file upload
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '*/*';
+    input.onchange = async (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        const result = await uploadFile(file);
+        console.log('Upload Result:', result);
+
+        if (result.success) {
+            fileSearch();
+            updateStats();
+        }
+    };
+    input.click();
+}
+
+function handleSearchInput(event: Event) {
+    const query = `${(event.target as HTMLInputElement).value}`;
+    searchQuery.value = query;
+
+    setTimeout(async () => {
+        if (searchQuery.value !== query) return; // ignore if query has changed
+        console.log('Searching for:', query);
+        fileSearch({ search: query });
+    }, 1000);
+}
+
+</script>
+
+<template>
+    <div>
+        <ion-card id="qa-card">
+            <ion-card-content>
+                <div id="qa-card-content">
+                    <div class="center-div">
+                        <ion-text color="medium" style="font-size: 20px">
+                            {{ (stats?.totalFiles || 0) }} Files
+                        </ion-text>
+                    </div>
+                    <div class="vertical-line"></div>
+                    <div class="center-div">
+                        <ion-button fill="outline" color="success" @click="handleUpload">
+                            Upload
+                        </ion-button>
+                    </div>
+                </div>
+            </ion-card-content>
+        </ion-card>
+
+        <div style="margin: 10px; margin-top: 20px;">
+            <ion-input fill="outline" placeholder="Search files" @ion-input="handleSearchInput">
+                <ion-icon slot="start" :icon="searchOutline" aria-hidden="true"></ion-icon>
+            </ion-input>
+        </div>
+
+        <br />
+
+        <ion-text color="medium" style="font-size: 16px; margin-left: 10px;">
+            {{ searchQuery.length > 0 ? 'Search Results' : 'Recent Files' }}
+        </ion-text>
+
+        <br />
+
+        <div v-if="isRetrievingFiles">
+            <div class="center-div" style="height: 100px;">
+                <ion-text color="medium" style="font-size: 16px;">
+                    Loading files...
+                </ion-text>
+            </div>
+        </div>
+        <div v-else-if="files.length === 0">
+            <div class="center-div" style="height: 100px;">
+                <ion-text color="medium" style="font-size: 16px;">
+                    No files found.
+                </ion-text>
+            </div>
+        </div>
+        <div v-else id="file-container" :style="dynamicGridStyle">
+            <ion-card v-for="n of files" :key="n.id">
+                <img v-if="n.thumbnailUrl" :src="n.thumbnailUrl" alt="Thumbnail"
+                    style="width: 100%; height: 100px; object-fit: cover;" />
+                <ion-card-header :style="dynamicGridHeaderStyle">
+                    <ion-card-subtitle :style="dynamicGridSubtitleStyle">{{ n.fileName }}</ion-card-subtitle>
+                </ion-card-header>
+            </ion-card>
+        </div>
+
+        <div v-if="files.length === maxAmount">
+            <div class="center-div" style="margin: 10px;">
+                <ion-button fill="clear" @click="router.push({ name: 'Files' })">
+                    View More
+                </ion-button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.center-div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.vertical-line {
+    border-left: 1px solid #ccc;
+    height: 40px;
+    margin: 0 auto;
+    width: 1px;
+}
+
+#qa_card {
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#qa-card-content {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 10px;
+}
+
+#file-container {
+    margin: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+</style>
