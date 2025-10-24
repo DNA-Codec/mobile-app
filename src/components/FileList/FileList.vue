@@ -8,7 +8,8 @@ import {
     IonIcon,
     IonInfiniteScroll, IonInfiniteScrollContent,
     IonInput,
-    IonText
+    IonText,
+    loadingController
 } from '@ionic/vue';
 import { searchOutline } from 'ionicons/icons';
 import { computed, onMounted, ref } from 'vue';
@@ -59,6 +60,20 @@ const currentLimit = ref<number>(props.maxAmount || 10);
 const searchTimeout = ref<number | null>(null);
 const isLoadingMore = ref<boolean>(false);
 
+let loading: HTMLIonLoadingElement | undefined = undefined;
+
+async function showLoading(message: string) {
+    if (!loading) loading = await loadingController.create({ message });
+    await loading.present();
+}
+
+async function hideLoading() {
+    if (loading) {
+        await loading.dismiss();
+        loading = undefined;
+    }
+}
+
 async function updateStats() {
     const statsResult = await getStats();
     if (statsResult.success) stats.value = statsResult.stats;
@@ -98,13 +113,21 @@ function handleUpload() {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
 
-        const result = await uploadFile(file);
-        console.log('Upload Result:', result);
+        showLoading("Uploading file...");
 
-        if (result.success) {
-            await loadFiles({ reset: true });
-            await updateStats();
+        try {
+            const result = await uploadFile(file);
+            console.log('Upload Result:', result);
+
+            if (result.success) {
+                await loadFiles({ reset: true });
+                await updateStats();
+            }
+        } catch (error) {
+            console.error('Upload Error:', error);
         }
+
+        hideLoading();
     };
     input.click();
 }
