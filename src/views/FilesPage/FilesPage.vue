@@ -41,7 +41,7 @@ onMounted(async () => {
                 <ion-breadcrumb href="#Files">Files</ion-breadcrumb>
             </ion-breadcrumbs>
 
-            <FileList />
+            <FileList :inf-scroll="true" />
 
         </ion-content>
     </ion-page>

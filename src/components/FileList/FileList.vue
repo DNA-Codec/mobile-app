@@ -2,9 +2,11 @@
 import { FileEntry, FileQuery, FileStats, useFiles } from '@/composable/files';
 import router from '@/router';
 import {
+    InfiniteScrollCustomEvent,
     IonButton,
     IonCard, IonCardContent, IonCardHeader, IonCardSubtitle,
     IonIcon,
+    IonInfiniteScroll, IonInfiniteScrollContent,
     IonInput,
     IonText
 } from '@ionic/vue';
@@ -14,9 +16,12 @@ import { computed, onMounted, ref } from 'vue';
 const props = withDefaults(defineProps<{
     previewSize?: "small" | "normal" | "large";
     maxAmount?: number;
+    infScroll?: boolean;
 }>(), {
     previewSize: "normal"
 });
+
+const FILE_LOAD_INCREMENT = 10;
 
 const dynamicGridStyle = computed(() => {
     const gridTemplate = {
@@ -50,27 +55,42 @@ const { getFiles, uploadFile, getStats, isRetrievingFiles } = useFiles();
 const stats = ref<FileStats | null>(null);
 const files = ref<Array<FileEntry>>([]);
 const searchQuery = ref<string>("");
+const currentLimit = ref<number>(props.maxAmount || 10);
+const searchTimeout = ref<number | null>(null);
+const isLoadingMore = ref<boolean>(false);
 
 async function updateStats() {
     const statsResult = await getStats();
     if (statsResult.success) stats.value = statsResult.stats;
 }
 
-async function fileSearch(query?: FileQuery) {
-    const baseQuery: FileQuery = { limit: props.maxAmount };
-    files.value = [];
-    const filesResult = await getFiles({ ...baseQuery, ...query });
-    if (filesResult.success) files.value = filesResult.files;
+async function loadFiles(options: { reset?: boolean; loadMore?: boolean } = {}) {
+    if (options.reset) {
+        files.value = [];
+        currentLimit.value = props.maxAmount || FILE_LOAD_INCREMENT;
+    }
+
+    if (options.loadMore) {
+        currentLimit.value += FILE_LOAD_INCREMENT;
+    }
+
+    const query: FileQuery = {
+        limit: currentLimit.value,
+        search: searchQuery.value || undefined
+    };
+
+    const filesResult = await getFiles(query);
+    if (filesResult.success) {
+        files.value = filesResult.files;
+    }
 }
 
 onMounted(async () => {
-    fileSearch();
-    updateStats();
-})
-
+    await loadFiles();
+    await updateStats();
+});
 
 function handleUpload() {
-    // prompt for file upload
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '*/*';
@@ -82,8 +102,8 @@ function handleUpload() {
         console.log('Upload Result:', result);
 
         if (result.success) {
-            fileSearch();
-            updateStats();
+            await loadFiles({ reset: true });
+            await updateStats();
         }
     };
     input.click();
@@ -93,12 +113,36 @@ function handleSearchInput(event: Event) {
     const query = `${(event.target as HTMLInputElement).value}`;
     searchQuery.value = query;
 
-    setTimeout(async () => {
-        if (searchQuery.value !== query) return; // ignore if query has changed
+    if (searchTimeout.value) {
+        clearTimeout(searchTimeout.value);
+    }
+
+    searchTimeout.value = window.setTimeout(async () => {
         console.log('Searching for:', query);
-        fileSearch({ search: query });
-    }, 1000);
+        await loadFiles({ reset: true });
+    }, 500);
 }
+
+async function ionInfinite(event: InfiniteScrollCustomEvent) {
+    if (!props.infScroll || isLoadingMore.value) {
+        event.target.complete();
+        return;
+    }
+
+    console.log('Loading more files...');
+    isLoadingMore.value = true;
+
+    const previousLength = files.value.length;
+    await loadFiles({ loadMore: true });
+
+    isLoadingMore.value = false;
+    event.target.complete();
+
+    // Disable infinite scroll if no more files were loaded
+    if (files.value.length === previousLength) {
+        event.target.disabled = true;
+    }
+};
 
 </script>
 
@@ -136,7 +180,7 @@ function handleSearchInput(event: Event) {
 
         <br />
 
-        <div v-if="isRetrievingFiles">
+        <div v-if="isRetrievingFiles && files.length === 0">
             <div class="center-div" style="height: 100px;">
                 <ion-text color="medium" style="font-size: 16px;">
                     Loading files...
@@ -150,17 +194,22 @@ function handleSearchInput(event: Event) {
                 </ion-text>
             </div>
         </div>
-        <div v-else id="file-container" :style="dynamicGridStyle">
-            <ion-card v-for="n of files" :key="n.id">
-                <img v-if="n.thumbnailUrl" :src="n.thumbnailUrl" alt="Thumbnail"
-                    style="width: 100%; height: 100px; object-fit: cover;" />
-                <ion-card-header :style="dynamicGridHeaderStyle">
-                    <ion-card-subtitle :style="dynamicGridSubtitleStyle">{{ n.fileName }}</ion-card-subtitle>
-                </ion-card-header>
-            </ion-card>
+        <div v-else>
+            <div id="file-grid-container" :style="dynamicGridStyle">
+                <ion-card v-for="file in files" :key="file.id">
+                    <img v-if="file.thumbnailUrl" :src="file.thumbnailUrl" alt="Thumbnail"
+                        style="width: 100%; height: 100px; object-fit: cover;" />
+                    <ion-card-header :style="dynamicGridHeaderStyle">
+                        <ion-card-subtitle :style="dynamicGridSubtitleStyle">{{ file.fileName }}</ion-card-subtitle>
+                    </ion-card-header>
+                </ion-card>
+            </div>
+            <ion-infinite-scroll v-if="infScroll" @ionInfinite="ionInfinite">
+                <ion-infinite-scroll-content></ion-infinite-scroll-content>
+            </ion-infinite-scroll>
         </div>
 
-        <div v-if="files.length === maxAmount">
+        <div v-if="!infScroll && maxAmount && files.length >= maxAmount">
             <div class="center-div" style="margin: 10px;">
                 <ion-button fill="clear" @click="router.push({ name: 'Files' })">
                     View More
@@ -196,9 +245,10 @@ function handleSearchInput(event: Event) {
     gap: 10px;
 }
 
-#file-container {
+#file-grid-container {
     margin: 10px;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    /* Grid columns are set dynamically via :style binding */
 }
 </style>
