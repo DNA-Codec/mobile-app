@@ -114,12 +114,12 @@ onMounted(async () => {
                         <div class="info-grid">
                             <div class="info-item">
                                 <strong>Original Size:</strong>
-                                <span>{{ file?.sizes?.originalSizeMB }} MB</span>
+                                <span>{{ formatBytes(file?.sizes?.originalSize) }}</span>
                                 <span class="small">File size before any processing</span>
                             </div>
                             <div class="info-item">
                                 <strong>Encoded Size:</strong>
-                                <span>{{ file?.sizes?.encodedSizeMB }} MB</span>
+                                <span>{{ formatBytes(file?.sizes?.encodedSize) }}</span>
                                 <span class="small">After Reed-Solomon error correction</span>
                             </div>
                             <div class="info-item">
@@ -129,7 +129,7 @@ onMounted(async () => {
                             </div>
                             <div class="info-item">
                                 <strong>Virtual DNA Size:</strong>
-                                <span>{{ file?.sizes?.diskDnaSizeMB }} MB</span>
+                                <span>{{ formatBytes(file?.sizes?.diskDnaSize) }}</span>
                                 <span class="small">Disk storage (each base = 1 byte)</span>
                             </div>
                         </div>
@@ -138,13 +138,15 @@ onMounted(async () => {
                         <div class="info-grid">
                             <div class="info-item highlight-positive">
                                 <strong>Error Correction Overhead:</strong>
-                                <span>+{{ file?.overhead?.errorCorrectionBytes?.toLocaleString() }} bytes</span>
-                                <span class="small">{{ file?.overhead?.errorCorrectionPercent }}% increase for data integrity</span>
+                                <span>+{{ formatBytes(file?.overhead?.errorCorrectionBytes) }}</span>
+                                <span class="small">{{ file?.overhead?.errorCorrectionPercent }}% increase for data
+                                    integrity</span>
                             </div>
                             <div class="info-item highlight-warning">
                                 <strong>Disk Storage Overhead:</strong>
-                                <span>+{{ file?.overhead?.diskStorageBytes?.toLocaleString() }} bytes</span>
-                                <span class="small">{{ file?.overhead?.diskStoragePercent }}% increase for ASCII encoding</span>
+                                <span>+{{ formatBytes(file?.overhead?.diskStorageBytes) }}</span>
+                                <span class="small">{{ file?.overhead?.diskStoragePercent }}% increase for ASCII
+                                    encoding</span>
                             </div>
                         </div>
 
@@ -157,13 +159,13 @@ onMounted(async () => {
                             </div>
                             <div class="info-item">
                                 <strong>Information Per Base:</strong>
-                                <span>{{ file?.encoding?.bitsPerBase }} bits</span>
+                                <span>{{ file?.encoding?.bitsPerBase }}</span>
                                 <span class="small">A=00, T=01, C=10, G=11</span>
                             </div>
                             <div class="info-item">
                                 <strong>Bases Per Byte:</strong>
                                 <span>{{ file?.encoding?.basesPerEncodedByte }} bases</span>
-                                <span class="small">8 bits ÷ 2 bits per base</span>
+                                <span class="small">8 bits / 2 bits per base</span>
                             </div>
                             <div class="info-item">
                                 <strong>Storage Efficiency:</strong>
