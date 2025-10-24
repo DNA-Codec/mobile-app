@@ -138,11 +138,13 @@ async function ionInfinite(event: InfiniteScrollCustomEvent) {
     isLoadingMore.value = false;
     event.target.complete();
 
-    // Disable infinite scroll if no more files were loaded
-    if (files.value.length === previousLength) {
-        event.target.disabled = true;
-    }
+    // Disable infinite scroll when depleted
+    if (files.value.length === previousLength) event.target.disabled = true;
 };
+
+function handleFileClick(file: FileEntry) {
+    router.push({ name: 'FileView', params: { id: file.id } });
+}
 
 </script>
 
@@ -196,7 +198,7 @@ async function ionInfinite(event: InfiniteScrollCustomEvent) {
         </div>
         <div v-else>
             <div id="file-grid-container" :style="dynamicGridStyle">
-                <ion-card v-for="file in files" :key="file.id">
+                <ion-card v-for="file in files" :key="file.id" @click="() => handleFileClick(file)">
                     <img v-if="file.thumbnailUrl" :src="file.thumbnailUrl" alt="Thumbnail"
                         style="width: 100%; height: 100px; object-fit: cover;" />
                     <ion-card-header :style="dynamicGridHeaderStyle">
@@ -249,6 +251,5 @@ async function ionInfinite(event: InfiniteScrollCustomEvent) {
     margin: 10px;
     display: grid;
     gap: 10px;
-    /* Grid columns are set dynamically via :style binding */
 }
 </style>

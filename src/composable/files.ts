@@ -6,13 +6,20 @@ export type FileEntry = {
     id: string;
     fileName: string;
     mimeType: string;
-    originalSize: number;
-    dnaSize: number;
-    realDnaSize: number;
+    sizes: {
+        originalSize: number;
+        encodedSize: number;
+        realDnaSize: number; // bytes (physical, each base = 1 bit)
+        realDnaSizeMB: string;
+        diskDnaSize: number;
+    };
     uploadedAt: string;
     totalChunks: number;
     thumbnailUrl?: string;
-    compressionRatio: string;
+    overhead: {
+        errorCorrection: string; // percentage with %
+        diskStorage: string; // percentage with %
+    };
 }
 
 type FilesResultSuccess = {
@@ -53,18 +60,29 @@ export type FileStats = {
     storage: {
         originalSize: number;
         originalSizeMB: string;
-        dnaSize: number;
-        dnaSizeMB: string;
-        realDnaSize: number;
-        realDnaSizeMB: string;
+        encodedSize: number;
+        encodedSizeMB: string;
+        realDnaSize: number; // number of bases
+        realDnaSizeKb: string; // kilobases
+        realDnaSizeMb: string; // megabases
+        diskDnaSize: number;
+        diskDnaSizeMB: string;
+    };
+    overhead: {
+        errorCorrectionBytes: number;
+        errorCorrectionPercent: string;
+        diskStorageBytes: number;
+        diskStoragePercent: string;
     };
     averages: {
         avgFileSize: number;
         avgChunksPerFile: string;
     };
-    efficiency: {
-        overheadBytes: number;
-        overheadPercent: string;
+    explanation?: {
+        originalSize: string;
+        encodedSize: string;
+        realDnaSize: string;
+        diskDnaSize: string;
     };
 }
 
@@ -79,6 +97,71 @@ type FileStatsResultFail = {
 }
 
 export type FileStatsResult = FileStatsResultSuccess | FileStatsResultFail;
+
+export interface FileMetadata {
+    /** Unique identifier for the file */
+    id: string;
+    /** Original filename */
+    originalFileName: string;
+    /** MIME type of the original file */
+    mimeType: string;
+    /** Original file size in bytes (before any processing) */
+    originalSize: number;
+    /** Physical DNA size in bytes (each base = 1 bit) */
+    realDnaSize: number;
+    /** DNA size on disk in bytes (each ACTG base stored as 1 byte character) */
+    diskDnaSize: number;
+    /** Size after error correction but before DNA encoding in bytes */
+    encodedSize: number;
+    /** Upload timestamp */
+    uploadedAt: Date;
+    /** Total number of chunks */
+    totalChunks: number;
+    /** Whether a thumbnail exists for this file */
+    hasThumbnail?: boolean;
+    /** Additional custom metadata */
+    customMetadata?: Record<string, any>;
+}
+
+export type FileInfo = {
+    metadata: FileMetadata & {
+        thumbnailUrl?: string;
+    };
+    sizes: {
+        originalSize: number;
+        originalSizeMB: string;
+        encodedSize: number;
+        encodedSizeMB: string;
+        realDnaSize: number; // number of bases
+        realDnaSizeKb: string; // kilobases
+        realDnaSizeMb: string; // megabases
+        diskDnaSize: number;
+        diskDnaSizeMB: string;
+    };
+    overhead: {
+        errorCorrectionBytes: number;
+        errorCorrectionPercent: string;
+        diskStorageBytes: number;
+        diskStoragePercent: string;
+    };
+    encoding: {
+        bitsPerBase: number; // 2
+        basesPerEncodedByte: number; // 4
+        totalBases: number;
+    };
+}
+
+type FileInfoResultSuccess = {
+    success: true;
+    file: FileInfo;
+}
+
+type FileInfoResultFail = {
+    success: false;
+    error: string;
+}
+
+export type FileInfoResult = FileInfoResultSuccess | FileInfoResultFail;
 
 export function useFiles() {
     const isRetrievingFiles = ref(false);
@@ -123,10 +206,24 @@ export function useFiles() {
         return result.data as FileStatsResult;
     }
 
+    async function getFile(fileId: string) {
+        const result = await axios.get(`${CONFIG.API_URL}/codec/api/v1/file/${fileId}`, { withCredentials: true });
+        if (!result.data.success) return result.data as FileInfoResultFail;
+
+        const data = result.data as FileInfoResultSuccess;
+
+        data.file.metadata.thumbnailUrl = data.file.metadata.hasThumbnail
+            ? `${CONFIG.API_URL}/codec/api/v1/thumbnail/${data.file.metadata.id}`
+            : undefined;
+
+        return data;
+    }
+
     return {
         uploadFile,
         getFiles,
         getStats,
+        getFile,
         isRetrievingFiles
     };
 }

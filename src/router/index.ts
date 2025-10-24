@@ -3,6 +3,7 @@ import { RouteRecordRaw } from 'vue-router';
 import { HomePage } from '@/views/HomePage'
 import { LoginPage } from '@/views/LoginPage';
 import { FilesPage } from '@/views/FilesPage';
+import { FileView } from '@/views/FileView';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -23,6 +24,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/files',
     name: 'Files',
     component: FilesPage
+  },
+  {
+    path: "/file/:id",
+    name: "FileView",
+    component: FileView
   }
 ]
 
