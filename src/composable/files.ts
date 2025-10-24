@@ -1,5 +1,6 @@
 import { CONFIG } from "@/config";
 import axios from "axios";
+import { ref } from "vue";
 
 export type FileEntry = {
     id: string;
@@ -46,13 +47,51 @@ export type FileQuery = {
 
 export type FilesResult = FilesResultSuccess | FilesResultFail;
 
+export type FileStats = {
+    totalFiles: number;
+    totalChunks: number;
+    storage: {
+        originalSize: number;
+        originalSizeMB: string;
+        dnaSize: number;
+        dnaSizeMB: string;
+        realDnaSize: number;
+        realDnaSizeMB: string;
+    };
+    averages: {
+        avgFileSize: number;
+        avgChunksPerFile: string;
+    };
+    efficiency: {
+        overheadBytes: number;
+        overheadPercent: string;
+    };
+}
+
+type FileStatsResultSuccess = {
+    success: true;
+    stats: FileStats;
+}
+
+type FileStatsResultFail = {
+    success: false;
+    error: string;
+}
+
+export type FileStatsResult = FileStatsResultSuccess | FileStatsResultFail;
+
 export function useFiles() {
+    const isRetrievingFiles = ref(false);
 
     async function getFiles(query: FileQuery = {}): Promise<FilesResult> {
+        isRetrievingFiles.value = true;
+
         const result = await axios.get(`${CONFIG.API_URL}/codec/api/v1/files`, {
             withCredentials: true,
             params: query
         });
+
+        isRetrievingFiles.value = false;
 
         const data = result.data as FilesResult;
         if (!data.success) return data;
@@ -79,8 +118,15 @@ export function useFiles() {
         return result.data;
     }
 
+    async function getStats() {
+        const result = await axios.get(`${CONFIG.API_URL}/codec/api/v1/stats`, { withCredentials: true });
+        return result.data as FileStatsResult;
+    }
+
     return {
         uploadFile,
-        getFiles
+        getFiles,
+        getStats,
+        isRetrievingFiles
     };
 }

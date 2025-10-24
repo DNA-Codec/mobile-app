@@ -8,22 +8,24 @@ import { onMounted, ref } from 'vue';
 import router from '@/router';
 import { MainToolbar } from '@/components/MainToolbar';
 import { searchOutline } from 'ionicons/icons';
-import { FileEntry, FileQuery, useFiles } from '@/composable/files';
+import { FileEntry, FileQuery, FileStats, useFiles } from '@/composable/files';
 
 const { getUserInfo } = useUser();
-const { getFiles, uploadFile } = useFiles();
+const { getFiles, uploadFile, getStats, isRetrievingFiles } = useFiles();
 
-const fileCount = ref<number>(0);
+const stats = ref<FileStats | null>(null);
 const files = ref<Array<FileEntry>>([]);
 const searchQuery = ref<string>("");
+
+async function updateStats() {
+  const statsResult = await getStats();
+  if (statsResult.success) stats.value = statsResult.stats;
+}
 
 async function fileSearch(query?: FileQuery) {
   const baseQuery: FileQuery = { limit: 6 };
   const filesResult = await getFiles({ ...baseQuery, ...query });
-  if (filesResult.success) {
-    fileCount.value = filesResult.pagination.totalFiles;
-    files.value = filesResult.files;
-  }
+  if (filesResult.success) files.value = filesResult.files;
 }
 
 onMounted(async () => {
@@ -32,6 +34,7 @@ onMounted(async () => {
   if (!userInfo) return router.push({ name: "Login" });
 
   fileSearch();
+  updateStats();
 })
 
 
@@ -85,7 +88,7 @@ function handleSearchInput(event: Event) {
           <div id="qa-card-content">
             <div class="center-div">
               <ion-text color="medium" style="font-size: 20px">
-                {{ fileCount }} Files
+                {{ (stats?.totalFiles || 0) }} Files
               </ion-text>
             </div>
             <div class="vertical-line"></div>
@@ -112,10 +115,24 @@ function handleSearchInput(event: Event) {
 
       <br />
 
-      <div id="file-container">
-        <!-- Placeholder for file items -->
+      <div v-if="isRetrievingFiles">
+        <div class="center-div" style="height: 100px;">
+          <ion-text color="medium" style="font-size: 16px;">
+            Loading files...
+          </ion-text>
+        </div>
+      </div>
+      <div v-else-if="files.length === 0">
+        <div class="center-div" style="height: 100px;">
+          <ion-text color="medium" style="font-size: 16px;">
+            No files found.
+          </ion-text>
+        </div>
+      </div>
+      <div v-else id="file-container">
         <ion-card v-for="n of files" :key="n.id">
-          <img v-if="n.thumbnailUrl" :src="n.thumbnailUrl" alt="Thumbnail" style="width: 100%; height: auto;" />
+          <img v-if="n.thumbnailUrl" :src="n.thumbnailUrl" alt="Thumbnail"
+            style="width: 100%; height: 100px; object-fit: cover;" />
           <ion-card-header>
             <ion-card-subtitle>{{ n.fileName }}</ion-card-subtitle>
           </ion-card-header>
