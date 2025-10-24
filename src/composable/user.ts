@@ -40,6 +40,16 @@ export function useUser() {
         }
     }
 
+    async function logout() {
+        try {
+            const response = await axios.post(`${CONFIG.API_URL}/user/v1/logout`, {}, { withCredentials: true });
+            return response.data as LoginResult;
+        } catch (error) {
+            console.error('Error logging out:', error);
+            return false;
+        }
+    }
+
     async function register(username: string, password: string) {
         try {
             const response = await axios.post(`${CONFIG.API_URL}/user/v1/register`, {
@@ -57,6 +67,7 @@ export function useUser() {
     return {
         getUserInfo,
         login,
+        logout,
         register
     }
 }

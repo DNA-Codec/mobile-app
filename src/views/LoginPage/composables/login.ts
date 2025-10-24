@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { useCommsSingleton } from "./comms";
 import { useUser } from "@/composable/user";
+import router from "@/router";
 
 type ValidationResult = { success: true } | { success: false; message: string };
 
@@ -20,8 +21,25 @@ export function useLogin() {
     const password = ref('');
     const verifyPassword = ref('');
 
+    const events: Map<string, Function[]> = new Map();
+
     const { sendToast, sendError } = useCommsSingleton();
     const { login, register } = useUser();
+
+    function onLoginSuccess(callback: Function) {
+        if (!events.has("loginSuccess")) events.set("loginSuccess", []);
+        events.get("loginSuccess")?.push(callback);
+    }
+
+    function onRegisterSuccess(callback: Function) {
+        if (!events.has("registerSuccess")) events.set("registerSuccess", []);
+        events.get("registerSuccess")?.push(callback);
+    }
+
+    function fireEvent(eventName: string, ...args: any[]) {
+        const eventCallbacks = events.get(eventName);
+        eventCallbacks?.forEach(callback => callback(...args));
+    }
 
     function validateUsername(): ValidationResult {
         if (username.value.length < CONFIG.username.min) {
@@ -66,7 +84,8 @@ export function useLogin() {
         if (result) {
             console.log(result);
             if (result.success) {
-                sendToast(isRegistering ? "Registration successful!" : "Login successful!");
+                if (isRegistering) fireEvent("registerSuccess");
+                else fireEvent("loginSuccess");
             } else {
                 sendToast(result.message);
                 if (result.validationErrors) {
@@ -86,5 +105,7 @@ export function useLogin() {
         password,
         verifyPassword,
         handleSubmit,
+        onLoginSuccess,
+        onRegisterSuccess,
     }
 }

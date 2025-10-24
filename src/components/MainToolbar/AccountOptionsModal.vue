@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useUser } from '@/composable/user';
+import router from '@/router';
 import {
     IonContent,
     IonHeader,
@@ -9,7 +11,8 @@ import {
     IonItem,
     IonInput,
     modalController,
-    IonIcon
+    IonIcon,
+    toastController
 } from '@ionic/vue';
 import { closeOutline } from 'ionicons/icons';
 import { ref } from 'vue';
@@ -18,6 +21,26 @@ const name = ref();
 
 const cancel = () => modalController.dismiss(null, 'cancel');
 const confirm = () => modalController.dismiss(name.value, 'confirm');
+
+const { logout } = useUser();
+
+async function handleLogout() {
+    const result = await logout();
+    if (result) {
+        await router.push({ name: 'Login' });
+        cancel();
+    } else {
+        console.error('Logout failed');
+
+        const toast = await toastController.create({
+            message: 'Failed to log out. Please try again.',
+            duration: 1500,
+            position: "top",
+        });
+
+        await toast.present();
+    }
+}
 </script>
 
 <template>
@@ -33,8 +56,9 @@ const confirm = () => modalController.dismiss(name.value, 'confirm');
     </ion-header>
     <ion-content class="ion-padding">
         <ion-item>
-            <ion-input label-placement="stacked" label="Enter your name" v-model="name"
-                placeholder="Your name"></ion-input>
+            <ion-button expand="block" color="danger" @click="handleLogout">
+                Logout
+            </ion-button>
         </ion-item>
     </ion-content>
 </template>

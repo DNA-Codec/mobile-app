@@ -11,11 +11,20 @@ import {
 import { ref } from 'vue';
 import { useCommsSingleton } from './composables/comms';
 import { useLogin } from './composables/login';
+import router from '@/router';
 
 const isRegistering = ref(false);
 
 const { usernameError, passwordError } = useCommsSingleton();
-const { username, password, verifyPassword, handleSubmit } = useLogin();
+const { username, password, verifyPassword, handleSubmit, onLoginSuccess, onRegisterSuccess } = useLogin();
+
+onLoginSuccess(async () => {
+    await router.push({ name: 'Home' });
+})
+
+onRegisterSuccess(async () => {
+    isRegistering.value = false;
+})
 
 </script>
 
@@ -57,7 +66,7 @@ const { username, password, verifyPassword, handleSubmit } = useLogin();
 
                             <ion-button @click="handleSubmit({ isRegistering })" expand="block">{{ isRegistering ?
                                 'Register' : 'Login'
-                                }}</ion-button>
+                            }}</ion-button>
 
                             <p v-if="isRegistering">Already have an account? <a @click="isRegistering = false">Login</a>
                             </p>
