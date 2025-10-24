@@ -13,6 +13,8 @@ import { FileEntry, FileQuery, FileStats, useFiles } from '@/composable/files';
 const { getUserInfo } = useUser();
 const { getFiles, uploadFile, getStats, isRetrievingFiles } = useFiles();
 
+const MAX_FILES = 4;
+
 const stats = ref<FileStats | null>(null);
 const files = ref<Array<FileEntry>>([]);
 const searchQuery = ref<string>("");
@@ -23,7 +25,8 @@ async function updateStats() {
 }
 
 async function fileSearch(query?: FileQuery) {
-  const baseQuery: FileQuery = { limit: 6 };
+  const baseQuery: FileQuery = { limit: MAX_FILES };
+  files.value = [];
   const filesResult = await getFiles({ ...baseQuery, ...query });
   if (filesResult.success) files.value = filesResult.files;
 }
@@ -49,6 +52,11 @@ function handleUpload() {
 
     const result = await uploadFile(file);
     console.log('Upload Result:', result);
+
+    if (result.success) {
+      fileSearch();
+      updateStats();
+    }
   };
   input.click();
 }
@@ -137,6 +145,14 @@ function handleSearchInput(event: Event) {
             <ion-card-subtitle>{{ n.fileName }}</ion-card-subtitle>
           </ion-card-header>
         </ion-card>
+      </div>
+
+      <div v-if="files.length === MAX_FILES">
+        <div class="center-div" style="margin: 10px;">
+          <ion-button fill="clear" @click="router.push({ name: 'Files' })">
+            View More
+          </ion-button>
+        </div>
       </div>
 
     </ion-content>
