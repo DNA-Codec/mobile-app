@@ -1,21 +1,35 @@
 <script setup lang="ts">
 import { FileList } from '@/components/FileList';
 import { MainToolbar } from '@/components/MainToolbar';
+import { FileStats, useFiles } from '@/composable/files';
 import { useUser } from '@/composable/user';
 import router from '@/router';
 import {
   IonContent, IonHeader, IonPage, IonTitle,
   IonToolbar, IonBreadcrumbs, IonBreadcrumb
 } from '@ionic/vue';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
+import { StorageAnalysis } from './components/analysis';
 
 const { getUserInfo } = useUser();
+const { getStats, onGlobalFileUploaded } = useFiles();
+
+const stats = ref<FileStats | null>(null);
+
+async function updateStats() {
+  const statsResult = await getStats();
+  if (statsResult.success) stats.value = statsResult.stats;
+}
 
 onMounted(async () => {
   const userInfo = await getUserInfo();
   console.log('User Info:', userInfo);
   if (!userInfo) return router.push({ name: "Login" });
+
+  updateStats();
 })
+
+onGlobalFileUploaded(updateStats);
 
 </script>
 
@@ -42,6 +56,9 @@ onMounted(async () => {
 
       <FileList preview-size="small" :max-amount="3" />
 
+      <br />
+
+      <StorageAnalysis v-if="stats && stats.totalFiles > 0" :stats="stats" />
     </ion-content>
   </ion-page>
 </template>

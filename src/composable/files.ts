@@ -62,9 +62,8 @@ export type FileStats = {
         originalSizeMB: string;
         encodedSize: number;
         encodedSizeMB: string;
-        realDnaSize: number; // number of bases
-        realDnaSizeKb: string; // kilobases
-        realDnaSizeMb: string; // megabases
+        realDnaSize: number;
+        realDnaSizeMB: string; // Fixed: backend sends MB not Mb
         diskDnaSize: number;
         diskDnaSizeMB: string;
     };
@@ -77,12 +76,6 @@ export type FileStats = {
     averages: {
         avgFileSize: number;
         avgChunksPerFile: string;
-    };
-    explanation?: {
-        originalSize: string;
-        encodedSize: string;
-        realDnaSize: string;
-        diskDnaSize: string;
     };
 }
 
@@ -163,8 +156,21 @@ type FileInfoResultFail = {
 
 export type FileInfoResult = FileInfoResultSuccess | FileInfoResultFail;
 
+const globalEvents = new Map<string, Function[]>();
+
 export function useFiles() {
     const isRetrievingFiles = ref(false);
+
+
+    function onGlobalFileUploaded(callback: Function) {
+        if (!globalEvents.has('fileUploaded')) globalEvents.set('fileUploaded', []);
+        globalEvents.get('fileUploaded')!.push(callback);
+    }
+
+    function fireGlobalEvent(eventName: string, data?: any) {
+        const eventCallbacks = globalEvents.get(eventName);
+        if (eventCallbacks) eventCallbacks.forEach(callback => callback(data));
+    }
 
     async function getFiles(query: FileQuery = {}): Promise<FilesResult> {
         isRetrievingFiles.value = true;
@@ -197,6 +203,8 @@ export function useFiles() {
             },
             withCredentials: true
         });
+
+        fireGlobalEvent('fileUploaded', result.data);
 
         return result.data;
     }
@@ -244,6 +252,7 @@ export function useFiles() {
         getFile,
         downloadFile,
         deleteFile,
+        onGlobalFileUploaded,
         isRetrievingFiles
     };
 }
