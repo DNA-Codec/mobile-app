@@ -37,7 +37,7 @@ onMounted(async () => {
       <br />
 
       <ion-breadcrumbs>
-        <ion-breadcrumb href="#Home">Home</ion-breadcrumb>
+        <ion-breadcrumb href="/Home">Home</ion-breadcrumb>
       </ion-breadcrumbs>
 
       <FileList preview-size="small" :max-amount="3" />

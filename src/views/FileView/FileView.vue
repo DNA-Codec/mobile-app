@@ -68,8 +68,8 @@ onMounted(async () => {
             <br />
 
             <ion-breadcrumbs>
-                <ion-breadcrumb href="#Home">Home</ion-breadcrumb>
-                <ion-breadcrumb href="#Files">File</ion-breadcrumb>
+                <ion-breadcrumb href="/Home">Home</ion-breadcrumb>
+                <ion-breadcrumb href="/File">File</ion-breadcrumb>
             </ion-breadcrumbs>
 
             <ion-card>
