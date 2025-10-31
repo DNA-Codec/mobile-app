@@ -220,8 +220,9 @@ export function useFiles() {
 
         const data = result.data as FileInfoResultSuccess;
 
+        const token = localStorage.getItem('auth_token');
         data.file.metadata.thumbnailUrl = data.file.metadata.hasThumbnail
-            ? `${CONFIG.API_URL}/codec/api/v1/thumbnail/${data.file.metadata.id}`
+            ? `${CONFIG.API_URL}/codec/api/v1/thumbnail/${data.file.metadata.id}?token=${token}`
             : undefined;
 
         return data;
