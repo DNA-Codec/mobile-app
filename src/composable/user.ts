@@ -16,6 +16,13 @@ type LoginSuccess = {
 type LoginResult = LoginSuccess | LoginError;
 
 export function useUser() {
+    const events: Map<string, Function[]> = new Map();
+
+    function fireEvent(eventName: string, ...args: any[]) {
+        const eventCallbacks = events.get(eventName);
+        eventCallbacks?.forEach(callback => callback(...args));
+    }
+
     async function getUserInfo() {
         try {
             const response = await axios.get(`${CONFIG.API_URL}/user/v1/me`, { withCredentials: true });
@@ -27,6 +34,11 @@ export function useUser() {
         }
     }
 
+    async function onUserLogin(cb: (result: LoginResult) => any) {
+        if (!events.has("userLogin")) events.set("userLogin", []);
+        events.get("userLogin")?.push(cb);
+    }
+
     async function login(username: string, password: string) {
         try {
             const response = await axios.post(`${CONFIG.API_URL}/user/v1/login`, {
@@ -35,6 +47,7 @@ export function useUser() {
             }, { withCredentials: true });
 
             if (response.data.token) localStorage.setItem('auth_token', response.data.token);
+            fireEvent("userLogin", response.data);
             return response.data as LoginResult;
         } catch (error) {
             console.error('Error logging in:', error);
@@ -72,6 +85,7 @@ export function useUser() {
         getUserInfo,
         login,
         logout,
-        register
+        register,
+        onUserLogin
     }
 }

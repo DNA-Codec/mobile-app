@@ -11,7 +11,7 @@ import {
 import { onMounted, ref } from 'vue';
 import { StorageAnalysis } from './components/analysis';
 
-const { getUserInfo } = useUser();
+const { getUserInfo, onUserLogin } = useUser();
 const { getStats, onGlobalFileUploaded } = useFiles();
 
 const stats = ref<FileStats | null>(null);
@@ -29,6 +29,7 @@ onMounted(async () => {
   updateStats();
 })
 
+onUserLogin(() => updateStats());
 onGlobalFileUploaded(updateStats);
 
 </script>

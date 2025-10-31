@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FileEntry, FileQuery, FileStats, useFiles } from '@/composable/files';
+import { useUser } from '@/composable/user';
 import router from '@/router';
 import {
     InfiniteScrollCustomEvent,
@@ -51,6 +52,7 @@ const dynamicGridSubtitleStyle = computed(() => {
     return { fontSize: fontSize[props.previewSize] };
 });
 
+const { onUserLogin } = useUser();
 const { getFiles, uploadFile, getStats, isRetrievingFiles } = useFiles();
 
 const stats = ref<FileStats | null>(null);
@@ -168,6 +170,11 @@ async function ionInfinite(event: InfiniteScrollCustomEvent) {
 function handleFileClick(file: FileEntry) {
     router.push({ name: 'FileView', params: { id: file.id } });
 }
+
+onUserLogin(() => {
+    loadFiles({ reset: true });
+    updateStats();
+})
 
 </script>
 

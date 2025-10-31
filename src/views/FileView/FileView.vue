@@ -11,6 +11,8 @@ import {
 } from '@ionic/vue';
 import { downloadOutline, trashBinOutline } from 'ionicons/icons';
 import { computed, onMounted, ref } from 'vue';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+
 
 const { getUserInfo } = useUser();
 const { getFile, downloadFile, deleteFile } = useFiles();
@@ -64,15 +66,30 @@ onMounted(async () => {
 
 async function handleDownload() {
     if (!file.value) return;
-    const blob = await downloadFile(file.value.metadata.id);
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.value?.metadata.originalFileName || 'downloaded_file';
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+
+    try {
+        const blob = await downloadFile(file.value.metadata.id);
+        const fileName = file.value?.metadata.originalFileName || 'downloaded_file';
+
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+            const base64data = reader.result as string;
+            const base64 = base64data.split(',')[1];
+
+            const result = await Filesystem.writeFile({
+                path: fileName,
+                data: base64,
+                directory: Directory.Documents
+            });
+
+            console.log('File saved to:', result.uri);
+            alert(`File saved successfully to Documents folder!`);
+        };
+    } catch (error) {
+        console.error('Download error:', error);
+        alert('Failed to download file');
+    }
 }
 
 async function handleDelete() {
