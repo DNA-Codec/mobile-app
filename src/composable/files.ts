@@ -161,6 +161,10 @@ const globalEvents = new Map<string, Function[]>();
 export function useFiles() {
     const isRetrievingFiles = ref(false);
 
+    function parseFileThumbnailUrl(url: string) {
+        const token = localStorage.getItem('auth_token');
+        return `${CONFIG.API_URL}/codec${url}?token=${token}`;
+    }
 
     function onGlobalFileUploaded(callback: Function) {
         if (!globalEvents.has('fileUploaded')) globalEvents.set('fileUploaded', []);
@@ -187,7 +191,7 @@ export function useFiles() {
 
         data.files = data.files.map(file => ({
             ...file,
-            thumbnailUrl: file.thumbnailUrl ? `${CONFIG.API_URL}/codec${file.thumbnailUrl}` : undefined,
+            thumbnailUrl: file.thumbnailUrl ? parseFileThumbnailUrl(file.thumbnailUrl) : undefined,
         }));
 
         return data;
@@ -220,9 +224,8 @@ export function useFiles() {
 
         const data = result.data as FileInfoResultSuccess;
 
-        const token = localStorage.getItem('auth_token');
         data.file.metadata.thumbnailUrl = data.file.metadata.hasThumbnail
-            ? `${CONFIG.API_URL}/codec/api/v1/thumbnail/${data.file.metadata.id}?token=${token}`
+            ? parseFileThumbnailUrl(`/api/v1/thumbnail/${data.file.metadata.id}`)
             : undefined;
 
         return data;
