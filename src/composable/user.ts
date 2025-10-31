@@ -10,6 +10,7 @@ type LoginError = {
 
 type LoginSuccess = {
     success: true;
+    token?: string;
 }
 
 type LoginResult = LoginSuccess | LoginError;
@@ -33,6 +34,7 @@ export function useUser() {
                 password
             }, { withCredentials: true });
 
+            if (response.data.token) localStorage.setItem('auth_token', response.data.token);
             return response.data as LoginResult;
         } catch (error) {
             console.error('Error logging in:', error);
@@ -43,9 +45,11 @@ export function useUser() {
     async function logout() {
         try {
             const response = await axios.post(`${CONFIG.API_URL}/user/v1/logout`, {}, { withCredentials: true });
+            localStorage.removeItem('auth_token');
             return response.data as LoginResult;
         } catch (error) {
             console.error('Error logging out:', error);
+            localStorage.removeItem('auth_token');
             return false;
         }
     }
