@@ -78,6 +78,13 @@ export function useLogin() {
             return;
         }
 
+        const isPasswordsMatching = isRegistering ? password.value === verifyPassword.value : true;
+        if (!isPasswordsMatching) {
+            sendError("password", "Passwords do not match");
+            sendToast("Please fix the errors and try again.");
+            return;
+        }
+
         // Submit
         const action = isRegistering ? register : login;
         const result = await action(username.value, password.value);
