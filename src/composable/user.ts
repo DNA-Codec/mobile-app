@@ -17,6 +17,7 @@ type LoginResult = LoginSuccess | LoginError;
 
 export function useUser() {
     async function getUserInfo() {
+        console.log("AuthToken: ", localStorage.getItem('auth_token'));
         try {
             const response = await axios.get(`${CONFIG.API_URL}/user/v1/me`, { withCredentials: true });
             return response.data;
