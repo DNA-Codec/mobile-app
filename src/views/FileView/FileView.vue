@@ -12,6 +12,7 @@ import {
 import { downloadOutline, trashBinOutline } from 'ionicons/icons';
 import { computed, onMounted, ref } from 'vue';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 
 
 const { getUserInfo } = useUser();
@@ -71,21 +72,36 @@ async function handleDownload() {
         const blob = await downloadFile(file.value.metadata.id);
         const fileName = file.value?.metadata.originalFileName || 'downloaded_file';
 
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-            const base64data = reader.result as string;
-            const base64 = base64data.split(',')[1];
+        if (Capacitor.isNativePlatform()) {
+            // Mobile: Use Capacitor Filesystem API
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64data = reader.result as string;
+                const base64 = base64data.split(',')[1];
 
-            const result = await Filesystem.writeFile({
-                path: fileName,
-                data: base64,
-                directory: Directory.Documents
-            });
+                const result = await Filesystem.writeFile({
+                    path: fileName,
+                    data: base64,
+                    directory: Directory.Documents
+                });
 
-            console.log('File saved to:', result.uri);
-            alert(`File saved successfully to Documents folder!`);
-        };
+                console.log('File saved to:', result.uri);
+                alert(`File saved successfully to Documents folder!`);
+            };
+        } else {
+            // Web: Use standard browser download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            console.log('File downloaded:', fileName);
+        }
     } catch (error) {
         console.error('Download error:', error);
         alert('Failed to download file');
