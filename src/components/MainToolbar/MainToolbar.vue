@@ -42,5 +42,6 @@ async function openModal() {
     margin-left: 10px;
     margin-right: 10px;
     margin-top: 15px;
+    margin-bottom: 10px;
 }
 </style>
