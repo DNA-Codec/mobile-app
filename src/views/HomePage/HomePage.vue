@@ -38,7 +38,6 @@ onGlobalFileUploaded(updateStats);
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <br />
         <MainToolbar />
       </ion-toolbar>
     </ion-header>

@@ -15,9 +15,9 @@ type LoginSuccess = {
 
 type LoginResult = LoginSuccess | LoginError;
 
-export function useUser() {
-    const events: Map<string, Function[]> = new Map();
+const events: Map<string, Function[]> = new Map();
 
+export function useUser() {
     function fireEvent(eventName: string, ...args: any[]) {
         const eventCallbacks = events.get(eventName);
         eventCallbacks?.forEach(callback => callback(...args));

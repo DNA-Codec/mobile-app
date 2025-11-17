@@ -79,6 +79,7 @@ async function hideLoading() {
 async function updateStats() {
     const statsResult = await getStats();
     if (statsResult.success) stats.value = statsResult.stats;
+    else stats.value = null;
 }
 
 async function loadFiles(options: { reset?: boolean; loadMore?: boolean } = {}) {
@@ -175,6 +176,13 @@ onUserLogin(() => {
     loadFiles({ reset: true });
     updateStats();
 })
+
+router.afterEach((to) => {
+    if (to.name === 'Home' || to.name == 'Files') {
+        loadFiles({ reset: true });
+        updateStats();
+    }
+});
 
 </script>
 
